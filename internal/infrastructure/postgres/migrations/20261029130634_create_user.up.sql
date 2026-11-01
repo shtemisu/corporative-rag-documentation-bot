@@ -1,0 +1,5 @@
+CREATE TABLE users IF NOT EXISTS () {
+    id BIGINT PRIMARY KEY,
+    username TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+};

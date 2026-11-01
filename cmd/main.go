@@ -5,7 +5,7 @@ import (
 	"corp-rag-tg-bot/config"
 	"corp-rag-tg-bot/internal/controller"
 	"corp-rag-tg-bot/internal/controller/telegram"
-	"corp-rag-tg-bot/internal/domain"
+	"log"
 	"os"
 	"os/signal"
 	"time"
@@ -16,25 +16,20 @@ import (
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
+
 	cfg := config.Load()
-
-	opts := []bot.Option{
-		bot.WithDefaultHandler(telegram.HelloHandler),
-		bot.WithSkipGetMe(),
+	var networkOpts []bot.Option
+	networkOpts = append(networkOpts, bot.WithSkipGetMe())
+	if cfg.ProxyURL != "" {
+		proxy := controller.NewProxy(cfg.ProxyURL)
+		networkOpts = append(networkOpts, bot.WithHTTPClient(30*time.Second, proxy))
 	}
 
-	proxy := controller.NewProxy(cfg.ProxyURL)
-
-	opts = append(opts, bot.WithHTTPClient(30*time.Second, proxy))
-
-	settings := domain.BotSettings{
-		Token: cfg.BotToken,
-		Opts:  opts,
-	}
-
-	bot, err := domain.NewBot(settings)
+	handler := telegram.NewBotHandler()
+	server, err := telegram.NewBotServer(cfg.BotToken, handler, networkOpts)
 	if err != nil {
-		return
+		log.Fatal(err)
 	}
-	bot.Start(ctx)
+	log.Println("Bot started...")
+	server.Start(ctx)
 }
