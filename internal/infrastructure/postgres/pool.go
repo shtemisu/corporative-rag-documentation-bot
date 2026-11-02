@@ -42,7 +42,7 @@ func mapPgErr(err error) error {
 	if pgError, ok := errors.AsType[*pgconn.PgError](err); ok {
 		switch pgError.Code {
 		case "23505":
-			return fmt.Errorf("%w: %s", domain.ErrUserNotFound, pgError.Detail)
+			return fmt.Errorf("%w: %s", domain.ErrUserAlreadyExists, pgError.Detail)
 		case "23503":
 			return fmt.Errorf("related entity missing: %w", err)
 		}
