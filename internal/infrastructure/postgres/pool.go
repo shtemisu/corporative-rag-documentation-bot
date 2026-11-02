@@ -39,8 +39,7 @@ func NewPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 }
 
 func mapPgErr(err error) error {
-	var pgError *pgconn.PgError
-	if errors.As(err, &pgError) {
+	if pgError, ok := errors.AsType[*pgconn.PgError](err); ok {
 		switch pgError.Code {
 		case "23505":
 			return fmt.Errorf("%w: %s", domain.ErrUserNotFound, pgError.Detail)
