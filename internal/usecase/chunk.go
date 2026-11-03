@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"strings"
+	"unicode/utf8"
 )
 
 type section struct {
@@ -72,6 +73,26 @@ func splitSections(text string) []section {
 	return sections
 }
 
+func packParagraphs(paragraphs []string, maxLen int) []string {
+	result := []string{}
+	current := ""
+	for _, paragraph := range paragraphs {
+		if current == "" {
+			current = paragraph
+		} else if utf8.RuneCountInString(current)+2+utf8.RuneCountInString(paragraph) <= maxLen {
+			current = current + "\n\n" + paragraph
+		} else {
+			result = append(result, current)
+			current = paragraph
+		}
+	}
+	if current != "" {
+		result = append(result, current)
+	}
+
+	return result
+}
+
 type Chunk struct {
 	Source  string
 	Heading string
@@ -86,10 +107,51 @@ func SplitMarkdown(source, text string, maxLen, overlap int) []Chunk {
 	if overlap >= maxLen {
 		overlap = maxLen / 2
 	}
-	sections := splitSections(text)
-	if len(sections) <= maxLen {
-
+	res := []Chunk{}
+	index := 0
+	for _, sec := range splitSections(text) {
+		var paragraphs []string
+		for b := range strings.SplitSeq(sec.body, "\n\n") {
+			trimmed := strings.TrimSpace(b)
+			if trimmed == "" {
+				continue
+			}
+			paragraphs = append(paragraphs, trimmed)
+		}
+		pieces := packParagraphs(paragraphs, maxLen)
+		for i, piece := range pieces {
+			text := piece
+			if i > 0 && overlap > 0 {
+				text = tailRunes(pieces[i-1], overlap) + "\n\n" + text
+			}
+			if sec.heading != "" {
+				text = sec.heading + "\n\n" + text
+			}
+			res = append(res, Chunk{Source: source, Heading: sec.heading, Index: index, Content: text})
+			index++
+		}
 	}
 
-	return nil
+	return res
+}
+
+func tailRunes(text string, n int) string {
+
+	if utf8.RuneCountInString(text) <= n {
+		return text
+	}
+	byteIdx := len(text)
+	for i := 0; i < n; i++ {
+		_, size := utf8.DecodeLastRuneInString(text[:byteIdx])
+		byteIdx -= size
+	}
+	return text[byteIdx:]
+}
+
+func tailRunesWithSpace(text string) string {
+	_, after, ok := strings.Cut(text, " ")
+	if !ok {
+		return text
+	}
+	return after
 }
