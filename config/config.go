@@ -8,9 +8,10 @@ import (
 )
 
 type Config struct {
-	BotToken string
-	AIToken  string
-	ProxyURL string
+	BotToken   string
+	OllamaURL  string
+	EmbedModel string
+	ProxyURL   string
 }
 
 func Load() *Config {

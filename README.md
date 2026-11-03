@@ -1,11 +1,13 @@
 # corporative-rag-documentation-bot
 
-Чтобы запустить сервис Ollama
+This bot need for easily start into project
+
+for start Ollama service:
 ```bash
 sudo systemctl start ollama
 ```
 
-Остановить:
+for stop Ollama service:
 ```bash
 sudo systemctl stop ollama
 ```
