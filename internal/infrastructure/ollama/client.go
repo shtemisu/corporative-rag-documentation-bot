@@ -105,5 +105,5 @@ func (c *Client) Generate(ctx context.Context, prompt string) (string, error) {
 	if err := resp.JSON(&res); err != nil {
 		return "", fmt.Errorf("failed to parse json: %w", err)
 	}
-	return "", nil
+	return resp, nil
 }
