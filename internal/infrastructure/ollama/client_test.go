@@ -47,7 +47,7 @@ func TestEmbedTabled(t *testing.T) {
 		wantErrText string
 	}{
 		{
-			name:  "model not installed",
+			name:  "model didn't install",
 			texts: []string{"a"},
 			handler: func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
@@ -72,11 +72,53 @@ func TestEmbedTabled(t *testing.T) {
 			srv := httptest.NewServer(tC.handler)
 			defer srv.Close()
 
-			c := NewClient(srv.URL, "bge-m3", "")
+			c := NewClient(srv.URL, "bge-m3", "gemma2:2b")
 
 			_, err := c.Embed(context.Background(), tC.texts)
 			if err.Error() != tC.wantErrText {
 				t.Errorf("\nwant error: %q, but got: %q", tC.wantErrText, err.Error())
+			}
+		})
+	}
+}
+
+func TestGenerate(t *testing.T) {
+	tests := []struct {
+		name        string
+		prompt      string
+		handler     http.HandlerFunc
+		wantErrText string
+	}{
+		{
+			name:   "empty prompt",
+			prompt: " ",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusNotFound)
+				w.Write([]byte(`{"error":"model 'gemma2:2b' not found, try pulling it first"}`))
+			},
+			wantErrText: `ollama returned status 404: {"error":"model 'gemma2:2b' not found, try pulling it first"}`,
+		},
+		{
+			name:   "bad request",
+			prompt: "bruh",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusBadRequest) // 400 status
+				w.Write([]byte(`{"error":"json: cannot unmarshal number into Go struct field EmbeddingRequest.input of type string"}`))
+			},
+			wantErrText: `ollama returned status 400: {"error":"json: cannot unmarshal number into Go struct field EmbeddingRequest.input of type string"}`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := httptest.NewServer(tt.handler)
+			defer srv.Close()
+
+			c := NewClient(srv.URL, "bge-m3", "gemma2:2b")
+			_, err := c.Generate(context.Background(), tt.prompt)
+			if err.Error() != tt.wantErrText {
+				t.Errorf("\nwant error: %q, but got: %q", tt.wantErrText, err.Error())
 			}
 		})
 	}
