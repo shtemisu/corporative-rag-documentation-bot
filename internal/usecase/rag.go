@@ -1,9 +1,7 @@
 package usecase
 
-import (
-	"github.com/gofiber/fiber/v3/client"
-)
+import "corp-rag-tg-bot/internal/domain"
 
 type RAGService struct {
-	LLMClient client.Client
+	embedder domain.Embedder
 }

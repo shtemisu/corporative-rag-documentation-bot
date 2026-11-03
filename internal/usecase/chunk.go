@@ -1,9 +1,15 @@
 package usecase
 
 import (
+	"corp-rag-tg-bot/internal/domain"
 	"strings"
 	"unicode/utf8"
 )
+
+var _ domain.Chunker = (*MarkdownChunker)(nil)
+
+type MarkdownChunker struct {
+}
 
 type section struct {
 	heading string
@@ -93,21 +99,14 @@ func packParagraphs(paragraphs []string, maxLen int) []string {
 	return result
 }
 
-type Chunk struct {
-	Source  string
-	Heading string
-	Index   int
-	Content string
-}
-
-func SplitMarkdown(source, text string, maxLen, overlap int) []Chunk {
+func (m *MarkdownChunker) Split(source, text string, maxLen, overlap int) []domain.Chunk {
 	if maxLen <= 0 {
 		maxLen = 1000
 	}
 	if overlap >= maxLen {
 		overlap = maxLen / 2
 	}
-	res := []Chunk{}
+	res := []domain.Chunk{}
 	index := 0
 	for _, sec := range splitSections(text) {
 		var paragraphs []string
@@ -127,7 +126,7 @@ func SplitMarkdown(source, text string, maxLen, overlap int) []Chunk {
 			if sec.heading != "" {
 				text = sec.heading + "\n\n" + text
 			}
-			res = append(res, Chunk{Source: source, Heading: sec.heading, Index: index, Content: text})
+			res = append(res, domain.Chunk{Source: source, Heading: sec.heading, Index: index, Content: text})
 			index++
 		}
 	}

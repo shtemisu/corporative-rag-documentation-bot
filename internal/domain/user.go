@@ -12,8 +12,11 @@ type User struct {
 }
 
 func NewUser(id int64, username string, clock time.Time) (*User, error) {
-	if username == "" || id <= 0 {
+	if id <= 0 {
 		return nil, ErrInvalidData
+	}
+	if username == "" {
+		return nil, ErrEmptyName
 	}
 
 	return &User{ID: id, Username: username, CreatedAt: clock.UTC()}, nil

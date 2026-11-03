@@ -28,7 +28,7 @@ func TestEmbed(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := NewClient(srv.URL, "bge-m3")
+	c := NewClient(srv.URL, "bge-m3", "")
 
 	got, err := c.Embed(context.Background(), []string{"a", "b"})
 	if err != nil {
@@ -72,7 +72,7 @@ func TestEmbedTabled(t *testing.T) {
 			srv := httptest.NewServer(tC.handler)
 			defer srv.Close()
 
-			c := NewClient(srv.URL, "bge-m3")
+			c := NewClient(srv.URL, "bge-m3", "")
 
 			_, err := c.Embed(context.Background(), tC.texts)
 			if err.Error() != tC.wantErrText {

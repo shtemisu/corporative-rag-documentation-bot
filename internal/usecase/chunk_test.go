@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"corp-rag-tg-bot/internal/domain"
 	"reflect"
 	"testing"
 )
@@ -241,21 +242,21 @@ func TestSplitMarkdown(t *testing.T) {
 		text    string
 		maxLen  int
 		overlap int
-		want    []Chunk
+		want    []domain.Chunk
 	}{
 		{
 			name:    "empty text",
 			text:    "",
 			maxLen:  100,
 			overlap: 0,
-			want:    []Chunk{},
+			want:    []domain.Chunk{},
 		},
 		{
 			name:    "only one section",
 			text:    "A\naaaa\n\nbbbb",
 			maxLen:  100,
 			overlap: 0,
-			want: []Chunk{
+			want: []domain.Chunk{
 				{
 					Source:  source,
 					Heading: "",
@@ -269,7 +270,7 @@ func TestSplitMarkdown(t *testing.T) {
 			text:    "just a text",
 			maxLen:  100,
 			overlap: 0,
-			want: []Chunk{
+			want: []domain.Chunk{
 				{
 					Source:  source,
 					Heading: "",
@@ -283,7 +284,7 @@ func TestSplitMarkdown(t *testing.T) {
 			text:    "# A\nx\n# B\ny",
 			maxLen:  100,
 			overlap: 0,
-			want: []Chunk{
+			want: []domain.Chunk{
 				{
 					Source:  source,
 					Heading: "A",
@@ -303,7 +304,7 @@ func TestSplitMarkdown(t *testing.T) {
 			text:    "# A\n\n## B\nтекст",
 			maxLen:  100,
 			overlap: 0,
-			want: []Chunk{
+			want: []domain.Chunk{
 				{
 					Source:  source,
 					Heading: "A > B",
@@ -317,7 +318,7 @@ func TestSplitMarkdown(t *testing.T) {
 			text:    "# A\naaaa\n\nbbbb",
 			maxLen:  4,
 			overlap: 2,
-			want: []Chunk{
+			want: []domain.Chunk{
 				{
 					Source:  source,
 					Heading: "A",
@@ -337,7 +338,7 @@ func TestSplitMarkdown(t *testing.T) {
 			text:    "# A\naaaa\n# B\nbbbb",
 			maxLen:  100,
 			overlap: 2,
-			want: []Chunk{
+			want: []domain.Chunk{
 				{
 					Source:  source,
 					Heading: "A",
@@ -357,7 +358,7 @@ func TestSplitMarkdown(t *testing.T) {
 			text:    "# Раздел\nабвгд\n\nежзий",
 			maxLen:  5,
 			overlap: 3,
-			want: []Chunk{
+			want: []domain.Chunk{
 				{
 					Source:  source,
 					Heading: "Раздел",
@@ -377,7 +378,7 @@ func TestSplitMarkdown(t *testing.T) {
 			text:    "# A\n\naa\n\n\n\n\nbb",
 			maxLen:  100,
 			overlap: 0,
-			want: []Chunk{
+			want: []domain.Chunk{
 				{
 					Source:  source,
 					Heading: "A",
@@ -391,7 +392,7 @@ func TestSplitMarkdown(t *testing.T) {
 			text:    "# A\n\naaaa\n\nbbbb",
 			maxLen:  0,
 			overlap: 0,
-			want: []Chunk{
+			want: []domain.Chunk{
 				{
 					Source:  source,
 					Heading: "A",
@@ -403,7 +404,8 @@ func TestSplitMarkdown(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := SplitMarkdown(source, tt.text, tt.maxLen, tt.overlap)
+			mc := MarkdownChunker{}
+			got := mc.Split(source, tt.text, tt.maxLen, tt.overlap)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("want: %#v, but got: %#v", tt.want, got)
 			}

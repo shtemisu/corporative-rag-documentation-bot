@@ -17,9 +17,8 @@ func NewProfileService(g domain.UserGetter, u domain.UserUpdater, d domain.UserD
 }
 
 func (s *ProfileService) Get(ctx context.Context, id int64) (*domain.User, error) {
-	valid := validateID(id)
-	if valid != nil {
-		return nil, fmt.Errorf("userId is invalid: %d", id)
+	if err := validateID(id); err != nil {
+		return nil, err
 	}
 	return s.getter.GetById(ctx, id)
 }
