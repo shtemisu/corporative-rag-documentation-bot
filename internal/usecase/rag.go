@@ -75,6 +75,7 @@ func (s *RAGService) Answer(ctx context.Context, question string) (string, error
 		if len(chunk.Content) != 0 {
 			info += "Content: " + chunk.Content + "\n"
 		}
+		contextChunks = append(contextChunks, info)
 	}
 
 	if len(contextChunks) == 0 {
