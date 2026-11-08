@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	pgxvec "github.com/pgvector/pgvector-go/pgx"
 )
 
 func NewPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
@@ -20,6 +22,19 @@ func NewPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 	cfg.MinConns = 1
 	cfg.MaxConnLifetime = time.Hour * 1
 	cfg.MaxConnIdleTime = 10 * time.Minute
+
+	cfg.BeforeConnect = func(ctx context.Context, cc *pgx.ConnConfig) error {
+		conn, err := pgx.ConnectConfig(ctx, cc)
+		if err != nil {
+			return fmt.Errorf("failed to connect for type registration: %w", err)
+		}
+		defer conn.Close(ctx)
+
+		if err := pgxvec.RegisterTypes(ctx, conn); err != nil {
+			return fmt.Errorf("failed to register pgvector types: %w", err)
+		}
+		return nil
+	}
 
 	pool, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {

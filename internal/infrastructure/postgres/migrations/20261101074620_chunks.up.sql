@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS chunks (
-    id        BIGSERIAL PRIMARY KEY,
+    id        BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     content   TEXT NOT NULL,
     source    TEXT NOT NULL,
     embedding vector(1024) NOT NULL,

@@ -14,7 +14,7 @@ type VectorSaver interface {
 }
 
 type VectorSearcher interface {
-	Search(ctx context.Context, embedding [][]float32, topK int) ([]Chunk, error)
+	Search(ctx context.Context, embedding []float32, topK int) ([]Chunk, error)
 }
 
 type Generator interface {
