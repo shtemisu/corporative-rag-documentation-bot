@@ -30,26 +30,45 @@ func (r *VectorRepository) Save(ctx context.Context, chunks []domain.Chunk, embe
 		return nil
 	}
 
-	batch := &pgx.Batch{}
+	source := chunks[0].Source
+	for _, c := range chunks {
+		if c.Source != source {
+			return fmt.Errorf("mixed sources in one Save: %q and %q", source, c.Source)
+		}
+	}
 
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return mapPgErr(err)
+	}
+	defer tx.Rollback(ctx)
+
+	if _, err := tx.Exec(ctx, `DELETE FROM chunks WHERE source = $1`, source); err != nil {
+		return mapPgErr(err)
+	}
+
+	batch := &pgx.Batch{}
 	query := `
 		INSERT INTO chunks (content, source, embedding, chunks_index, heading) 
 		VALUES ($1, $2, $3, $4, $5)
 	`
-
-	for idx, chunk := range chunks {
-		vec := pgvector.NewVector(embeddings[idx])
-		batch.Queue(query, chunk.Content, chunk.Source, vec, chunk.Index, chunk.Heading)
+	for i, chunk := range chunks {
+		batch.Queue(query, chunk.Content, chunk.Source, pgvector.NewVector(embeddings[i]), chunk.Index, chunk.Heading)
 	}
 
-	br := r.pool.SendBatch(ctx, batch)
-	defer br.Close()
-
+	br := tx.SendBatch(ctx, batch)
 	for i := range chunks {
-		_, err := br.Exec()
-		if err != nil {
-			return mapPgErr(fmt.Errorf("failed to execute batch item %d: %w", i, err))
+		if _, err := br.Exec(); err != nil {
+			_ = br.Close()
+			return mapPgErr(fmt.Errorf("batch item %d: %w", i, err))
 		}
+	}
+	if err := br.Close(); err != nil {
+		return mapPgErr(err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return mapPgErr(err)
 	}
 	return nil
 }
@@ -64,7 +83,8 @@ func (r *VectorRepository) Search(ctx context.Context, embeddings []float32, top
 	}
 
 	query := `
-		SELECT content, source, chunks_index, heading FROM chunks
+		SELECT content, source, chunks_index, heading, (embedding <=> $1)::float8 AS distance
+		FROM chunks
 		ORDER BY embedding <=> $1 ASC
 		LIMIT $2
 	`
@@ -75,7 +95,7 @@ func (r *VectorRepository) Search(ctx context.Context, embeddings []float32, top
 	if err != nil {
 		return nil, mapPgErr(err)
 	}
-
+	defer rows.Close()
 	var chunks []domain.Chunk
 
 	for rows.Next() {
@@ -85,6 +105,7 @@ func (r *VectorRepository) Search(ctx context.Context, embeddings []float32, top
 			&chunk.Source,
 			&chunk.Index,
 			&chunk.Heading,
+			&chunk.Distance,
 		)
 
 		if err != nil {

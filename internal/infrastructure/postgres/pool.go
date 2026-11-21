@@ -23,17 +23,8 @@ func NewPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 	cfg.MaxConnLifetime = time.Hour * 1
 	cfg.MaxConnIdleTime = 10 * time.Minute
 
-	cfg.BeforeConnect = func(ctx context.Context, cc *pgx.ConnConfig) error {
-		conn, err := pgx.ConnectConfig(ctx, cc)
-		if err != nil {
-			return fmt.Errorf("failed to connect for type registration: %w", err)
-		}
-		defer conn.Close(ctx)
-
-		if err := pgxvec.RegisterTypes(ctx, conn); err != nil {
-			return fmt.Errorf("failed to register pgvector types: %w", err)
-		}
-		return nil
+	cfg.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
+		return pgxvec.RegisterTypes(ctx, conn)
 	}
 
 	pool, err := pgxpool.NewWithConfig(ctx, cfg)
@@ -57,7 +48,10 @@ func mapPgErr(err error) error {
 	if pgError, ok := errors.AsType[*pgconn.PgError](err); ok {
 		switch pgError.Code {
 		case "23505":
-			return fmt.Errorf("%w: %s", domain.ErrUserAlreadyExists, pgError.Detail)
+			if pgError.ConstraintName == "users_pkey" {
+				return fmt.Errorf("%w: %s", domain.ErrUserAlreadyExists, pgError.Detail)
+			}
+			return fmt.Errorf("%w: %s", domain.ErrConflict, pgError.Detail)
 		case "23503":
 			return fmt.Errorf("related entity missing: %w", err)
 		}

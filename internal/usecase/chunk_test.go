@@ -195,7 +195,7 @@ func TestTailRunes(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := tailRunes(tt.inStr, tt.inN)
 			if tt.want != got {
-				t.Errorf("want: %q, but got: %qd", tt.want, got)
+				t.Errorf("want: %q, but got: %q", tt.want, got)
 			}
 		})
 	}
@@ -234,7 +234,7 @@ func TestTailRunesWithSpace(t *testing.T) {
 	}
 }
 
-var source string = "doc.md"
+const source string = "doc.md"
 
 func TestSplitMarkdown(t *testing.T) {
 	tests := []struct {

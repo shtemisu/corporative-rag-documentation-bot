@@ -7,6 +7,9 @@ type Chunk struct {
 	Heading string
 	Index   int
 	Content string
+	// Distance — косинусное расстояние до поискового запроса (1 - cos similarity).
+	// Заполняется VectorSearcher.
+	Distance float64
 }
 
 type VectorSaver interface {
